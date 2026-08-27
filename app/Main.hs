@@ -1,4 +1,6 @@
 module Main where
 
+import Telegram (hello)
+
 main :: IO ()
-main = putStrLn "Hello from Haskell!"
+main = putStrLn hello
