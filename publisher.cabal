@@ -1,9 +1,9 @@
 cabal-version:      3.0
-name:               telegram-publisher
+name:               publisher
 version:            0.1.0.0
 build-type:         Simple
 
-executable telegram-publisher
+executable publisher
     main-is:          Main.hs
     hs-source-dirs:   app, src
     other-modules:
