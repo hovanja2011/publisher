@@ -1,0 +1,20 @@
+name: Mail test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  mail-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Mail.ru IMAP
+        env:
+          MAIL_USER: ${{ secrets.MAIL_USER }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+        run: |
+          echo "Checking Mail.ru IMAP..."
+          curl --fail \
+            --url "imaps://imap.mail.ru/INBOX" \
+            --user "${MAIL_USER}:${MAIL_PASSWORD}" \
+            --request "EXAMINE"
