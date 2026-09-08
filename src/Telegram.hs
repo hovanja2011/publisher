@@ -8,12 +8,7 @@ import Network.HTTP.Client.TLS
 
 sendMessage :: String -> String -> String -> IO ()
 sendMessage token chatId text = do
-    let settings =
-            managerSetProxy
-                (proxyEnvironment Nothing)
-                tlsManagerSettings
-
-    manager <- newManager settings
+    manager <- newManager tlsManagerSettings
 
     request <- parseRequest $
         "POST https://api.telegram.org/bot"
