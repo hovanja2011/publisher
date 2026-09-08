@@ -17,4 +17,4 @@ jobs:
           curl --fail \
             --url "imaps://imap.mail.ru/INBOX" \
             --user "${MAIL_USER}:${MAIL_PASSWORD}" \
-            --request "EXAMINE"
+            --request "NOOP"
