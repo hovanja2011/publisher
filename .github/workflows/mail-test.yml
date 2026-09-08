@@ -8,13 +8,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check Mail.ru IMAP
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Haskell
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.10'
+          cabal-version: '3.14'
+
+      - name: Build
+        run: cabal build
+
+      - name: Read latest email
         env:
           MAIL_USER: ${{ secrets.MAIL_USER }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
-        run: |
-          echo "Checking Mail.ru IMAP..."
-          curl --fail \
-            --url "imaps://imap.mail.ru/INBOX" \
-            --user "${MAIL_USER}:${MAIL_PASSWORD}" \
-            --request "NOOP"
+        run: cabal run publisher
