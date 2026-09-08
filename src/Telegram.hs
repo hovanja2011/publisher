@@ -2,9 +2,11 @@
 
 module Telegram where
 
+import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Char8 as BS
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
+import qualified Data.Aeson.Types as Aeson
 
 sendMessage :: String -> String -> String -> IO ()
 sendMessage token chatId text = do
@@ -24,5 +26,23 @@ sendMessage token chatId text = do
 
     response <- httpLbs requestWithBody manager
 
-    putStrLn $ "Telegram response status: "
-        ++ show (responseStatus response)
+    putStrLn $
+        "Telegram response status: "
+            ++ show (responseStatus response)
+
+    let body = responseBody response
+
+    case Aeson.decode body :: Maybe Aeson.Value of
+        Just (Aeson.Object obj) ->
+            case Aeson.parseMaybe (Aeson..: "ok") obj of
+                Just True ->
+                    putStrLn "Telegram: message sent successfully."
+
+                Just False ->
+                    fail "Telegram API returned ok=false."
+
+                Nothing ->
+                    fail "Telegram response does not contain 'ok'."
+
+        _ ->
+            fail "Could not parse Telegram response as JSON."
