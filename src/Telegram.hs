@@ -7,6 +7,8 @@ import qualified Data.ByteString.Char8 as BS
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 import qualified Data.Aeson.Types as Aeson
+import qualified Data.Text.Encoding as TE
+import qualified Data.Text as T
 
 sendMessage :: String -> String -> String -> IO ()
 sendMessage token chatId text = do
@@ -20,7 +22,7 @@ sendMessage token chatId text = do
     let requestWithBody =
             urlEncodedBody
                 [ ("chat_id", BS.pack chatId)
-                , ("text", BS.pack text)
+                , ("text", TE.encodeUtf8 (T.pack text))
                 ]
                 request
 
