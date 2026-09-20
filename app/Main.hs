@@ -14,12 +14,18 @@ import Data.IMF (headerSubject, parse, message)
 
 import Control.Lens
 import Data.MIME.Charset (charsetText')
+import qualified Data.Text as T
 
+import Telegram (sendMessage)
 
 main :: IO ()
 main = do
     user <- getEnv "MAIL_USER"
     password <- getEnv "MAIL_PASSWORD"
+    sender <- getEnv "MAIL_SENDER"
+
+    telegramToken <- getEnv "TELEGRAM_BOT_TOKEN"
+    telegramChatId <- getEnv "TELEGRAM_CHAT_ID"
 
     conn <- connectIMAPSSL "imap.mail.ru"
     putStrLn "Connected."
@@ -30,21 +36,45 @@ main = do
     select conn "INBOX"
     putStrLn "INBOX selected."
 
-    statusInfo <- status conn "INBOX" [UIDNEXT]
+    uids <- search conn [FROMs sender, NEWs]
 
-    case statusInfo of
-        [(UIDNEXT, nextUid)] -> do
-            let latestUid = fromIntegral (nextUid - 1)
+    case uids of
+        [] -> do
+            putStrLn "No new publication email."
 
-            email <- fetchPeek conn latestUid
+        _ -> do
+            let uid = last uids
 
-            printEmail email
+            putStrLn "New publication email found."
 
-        _ ->
-            putStrLn "Could not get UIDNEXT."
+            email <- fetchPeek conn uid
+
+            result <- getEmailContent email
+
+            case result of
+                Nothing ->
+                    putStrLn "Could not parse email."
+
+                Just (subject, body) -> do
+                    putStrLn "--- SUBJECT ---"
+                    putStrLn subject
+
+                    putStrLn "--- BODY ---"
+                    putStrLn body
+
+                    let telegramText =
+                            subject ++ "\n\n" ++ body
+
+                    sendMessage
+                        telegramToken
+                        telegramChatId
+                        telegramText
+
+                    store conn uid (PlusFlags [Seen])
+
+                    putStrLn "Email marked as processed."
 
     logout conn
-
 
 printEmail :: B.ByteString -> IO ()
 printEmail email =
@@ -93,3 +123,36 @@ printTextBody entity =
 
         Nothing ->
             putStrLn "Could not decode text/plain body."
+
+getEmailContent :: B.ByteString -> IO (Maybe (String, String))
+getEmailContent email =
+    case parse (message mime) email of
+        Left err -> do
+            putStrLn ("Parse error: " ++ err)
+            return Nothing
+
+        Right msg -> do
+            let subject =
+                    case view (headerSubject defaultCharsets) msg of
+                        Just s  -> T.unpack s
+                        Nothing -> ""
+
+            let body =
+                    case firstOf
+                            (entities . filtered isTextPlain)
+                            msg of
+
+                        Just entity ->
+                            case preview
+                                    (transferDecoded'
+                                        . _Right
+                                        . charsetText' defaultCharsets
+                                        . _Right)
+                                    entity of
+                                Just text -> T.unpack text
+                                Nothing   -> ""
+
+                        Nothing ->
+                            ""
+
+            return (Just (subject, body))

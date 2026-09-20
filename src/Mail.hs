@@ -1,3 +1,3 @@
 module Mail where
 
-import Network.HaskellNet.IMAP.SSL
+-- import Network.HaskellNet.IMAP.SSL
